@@ -1,12 +1,13 @@
 import logging
 import pandas
-from azure.kusto.ingest import KustoIngestClient, IngestionProperties, FileDescriptor, BlobDescriptor, DataFormat, KustoStreamingIngestClient
+from azure.kusto.ingest import KustoIngestClient, IngestionProperties, DataFormat, KustoStreamingIngestClient
 
 
 class KustoHandler(logging.Handler):
     """
     A handler class which writes formatted logging records to Kusto.
     """
+
     def __init__(self, kcsb, database, table, data_format=DataFormat.CSV, useStreaming=False):
         """
         Initialize the appropriate kusto clienrt.
@@ -14,7 +15,7 @@ class KustoHandler(logging.Handler):
         logging.Handler.__init__(self)
 
         # ugly workaround to avoid the libraries to call back the logger (infinite recursion)
-        # need to fix
+        # need to dig/fix
         logging.getLogger("azure").propagate = False
         logging.getLogger("oauthlib").propagate = False
         logging.getLogger("msrest").propagate = False
@@ -31,10 +32,9 @@ class KustoHandler(logging.Handler):
         else:
             self.client = KustoIngestClient(kcsb)
 
-        self.ingestion_properties =IngestionProperties(database, table, data_format=data_format)
+        self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
         self.fields = None
         self.rows = []
-        
 
     def emit(self, record):
         """
@@ -43,7 +43,7 @@ class KustoHandler(logging.Handler):
         """
         if not self.fields:
             self.fields = list(record.__dict__.keys())
-        
+
         self.rows.append(list(record.__dict__.values()))
 
     def flush(self):
@@ -57,4 +57,4 @@ class KustoHandler(logging.Handler):
 
     def __repr__(self):
         level = logging.Handler.getLevelName(self.level)
-        return '<%s %s (%s)>' % (self.__class__.__name__, self.baseFilename, level)
+        return "<%s %s (%s)>" % (self.__class__.__name__, self.baseFilename, level)

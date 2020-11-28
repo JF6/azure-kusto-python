@@ -21,7 +21,7 @@ This project uses [pytest](https://docs.pytest.org/en/latest/).
 Since the tests use the package as a third-party, the easiest way to set it up is installing it in edit mode:
 
 ```bash
-pip install -e ./azure-kusto-data ./azure-kusto-ingest
+pip install -e ./azure-kusto-data ./azure-kusto-ingest ./azure-kusto-logging
 ```
 
 After which, running tests is simple.
@@ -29,7 +29,7 @@ After which, running tests is simple.
 Just run:
 
 ```bash
-pytest ./azure-kusto-data ./azure-kusto-ingest 
+pytest ./azure-kusto-data ./azure-kusto-ingest  ./azure-kusto-logging
 ```
 
 ## Style
@@ -37,7 +37,7 @@ pytest ./azure-kusto-data ./azure-kusto-ingest
 We use black, and allow for line-length of 160, so please run:
 
 ```bash
-black --line-length=160 ./azure-kusto-data ./azure-kusto-ingest
+black --line-length=160 ./azure-kusto-data ./azure-kusto-ingest ./azure-kusto-logging
 ```
 
 ## PRs

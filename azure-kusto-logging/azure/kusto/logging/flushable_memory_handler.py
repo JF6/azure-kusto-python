@@ -6,10 +6,10 @@ class FlushableMemoryHandler(MemoryHandler):
     """
 
     A MemoryHandler which can call the target flush method. This lets the target processing
-    the effective sending upon flush instead of emit, increasing performance overall. 
+    the effective sending upon flush instead of emit, increasing performance overall.
     """
-    def __init__(self, capacity, flushLevel=logging.ERROR, target=None,
-                 flushOnClose=True, flushTarget=False):
+
+    def __init__(self, capacity, flushLevel=logging.ERROR, target=None, flushOnClose=True, flushTarget=False):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -19,13 +19,12 @@ class FlushableMemoryHandler(MemoryHandler):
         reasons - the old behaviour is that when the handler is closed, the
         buffer is flushed, even if the flush level hasn't been exceeded nor the
         capacity exceeded. To prevent this, set ``flushOnClose`` to ``False``.
-        The ``flushTarget`` argument is ``False`` for backward compatility reasons 
+        The ``flushTarget`` argument is ``False`` for backward compatility reasons
         as the target flush method was not called. Set it to ``True``to invoke the
         target's flush method.
         """
         MemoryHandler.__init__(self, capacity, flushLevel, target, flushOnClose)
         self.flushTarget = flushTarget
-
 
     def flush(self):
         """
