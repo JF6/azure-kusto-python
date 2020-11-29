@@ -97,7 +97,7 @@ def assert_rows_added(expected: int, timeout=60):
 
     actual = 0
     while timeout > 0:
-        time.sleep(10)
+        time.sleep(1)
         timeout -= 1
 
         try:
@@ -124,6 +124,7 @@ def test_info_logging(caplog):
 
     for i in range(1,10):
         logging.info("Test info {0}".format(i))
+    logging.error("ZeEnd") # to flush the buffer
     assert_rows_added(10)
 
 
