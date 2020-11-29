@@ -1,7 +1,7 @@
 import logging
 import pandas
-from azure.kusto.ingest import KustoIngestClient, IngestionProperties, DataFormat, KustoStreamingIngestClient
 
+from azure.kusto.ingest import DataFormat
 
 class KustoHandler(logging.Handler):
     """
@@ -13,19 +13,7 @@ class KustoHandler(logging.Handler):
         Initialize the appropriate kusto clienrt.
         """
         logging.Handler.__init__(self)
-
-        # ugly workaround to avoid the libraries to call back the logger (infinite recursion)
-        # need to dig/fix
-        logging.getLogger("azure").propagate = False
-        logging.getLogger("oauthlib").propagate = False
-        logging.getLogger("msrest").propagate = False
-        logging.getLogger("msal").propagate = False
-        logging.getLogger("msal_extensions").propagate = False
-        logging.getLogger("asyncio").propagate = False
-        logging.getLogger("concurrent").propagate = False
-        logging.getLogger("adal-python").propagate = False
-        logging.getLogger("requests").propagate = False
-        logging.getLogger("urllib3").propagate = False
+        from azure.kusto.ingest import KustoIngestClient, IngestionProperties, KustoStreamingIngestClient
 
         if useStreaming:
             self.client = KustoStreamingIngestClient(kcsb)
