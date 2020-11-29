@@ -67,12 +67,11 @@ start_time = datetime.datetime.now(datetime.timezone.utc)
 with open("azure-kusto-logging/tests/createTable.kql") as f:
     tbl_create = f.read()
 client.execute(test_db,tbl_create.format(test_table))
+sleep(100) # wait for the table to be created
 
 current_count = 0
 
-
 kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
-
 
 memoryhandler = FlushableMemoryHandler(
     capacity=8192,
@@ -83,17 +82,13 @@ memoryhandler = FlushableMemoryHandler(
 )
 logger = logging.getLogger()
 logger.addHandler(memoryhandler)
+logger.setLevel(logging.DEBUG)
 
-
-ch = logging.StreamHandler
-logging.getLogger("root.pyy").addHandler(ch)
-
-sleep(100)
 
 
 # assertions
-def assert_rows_added(expected: int, timeout=60):
-    global current_count
+def assert_rows_added(expected: int, level: int, timeout=60):
+    current_count=0
 
     actual = 0
     while timeout > 0:
@@ -101,7 +96,7 @@ def assert_rows_added(expected: int, timeout=60):
         timeout -= 1
 
         try:
-            response = client.execute(test_db, "{} | count".format(test_table))
+            response = client.execute(test_db, "{} | where levelno=={} | count".format(test_table, level))
         except KustoServiceError:
             continue
 
@@ -116,210 +111,38 @@ def assert_rows_added(expected: int, timeout=60):
     assert actual == expected, "Row count expected = {0}, while actual row count = {1}".format(expected, actual)
 
 
+
 def test_info_logging(caplog):
-    caplog.set_level(logging.CRITICAL, logger="root.pyy")
-    global logger
-
-    logger.setLevel(logging.INFO)
-
-    for i in range(1,10):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,50):
         logging.info("Test info {0}".format(i))
-    logging.error("ZeEnd") # to flush the buffer
-    assert_rows_added(10)
+    logging.error('The end.')
+    assert_rows_added(50, logging.INFO)
+
+# def test_debug_logging(caplog):
+#     caplog.set_level(logging.CRITICAL, logger="adal-python")
+#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+#     for i in range(0,100):
+#         logging.debug("Test debug {0}".format(i))
+#     logging.error('The end.')
+#     assert_rows_added(100, logging.DEBUG)
 
 
-# def test_csv_ingest_existing_table():
-#     csv_ingest_props = IngestionProperties(
-#         test_db,
-#         test_table,
-#         data_format=DataFormat.CSV,
-#         ingestion_mapping=TestData.test_table_csv_mappings(),
-#         report_level=ReportLevel.FailuresAndSuccesses,
-#         flush_immediately=True,
-#     )
-
-#     for f in [csv_file_path, zipped_csv_file_path]:
-#         ingest_client.ingest_from_file(f, csv_ingest_props)
-
-#     assert_rows_added(20)
 
 
-# def test_json_ingest_existing_table():
-#     json_ingestion_props = IngestionProperties(
-#         test_db,
-#         test_table,
-#         flush_immediately=True,
-#         data_format=DataFormat.JSON,
-#         ingestion_mapping=TestData.test_table_json_mappings(),
-#         report_level=ReportLevel.FailuresAndSuccesses,
-#     )
+# def test_exception_logging(caplog):
+#     caplog.set_level(logging.CRITICAL, logger="adal-python")
+#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+#     for i in range(0,5):
+#         logging.exception("Test exception {0}".format(i))
+#     assert_rows_added(5, logging.CRITICAL)
 
-#     for f in [json_file_path, zipped_json_file_path]:
-#         ingest_client.ingest_from_file(f, json_ingestion_props)
-
-#     assert_rows_added(4)
+# def test_exception_logging(caplog):
+#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+#     for i in range(0,10):
+#         logging.error("Test error {0}".format(i))
+#     assert_rows_added(10, logging.ERROR)
 
 
-# def test_ingest_complicated_props():
-#     validation_policy = ValidationPolicy(
-#         validation_options=ValidationOptions.ValidateCsvInputConstantColumns, validation_implications=ValidationImplications.Fail
-#     )
-#     json_ingestion_props = IngestionProperties(
-#         test_db,
-#         test_table,
-#         data_format=DataFormat.JSON,
-#         ingestion_mapping=TestData.test_table_json_mappings(),
-#         additional_tags=["a", "b"],
-#         ingest_if_not_exists=["aaaa", "bbbb"],
-#         ingest_by_tags=["ingestByTag"],
-#         drop_by_tags=["drop", "drop-by"],
-#         flush_immediately=False,
-#         report_level=ReportLevel.FailuresAndSuccesses,
-#         report_method=ReportMethod.Queue,
-#         validation_policy=validation_policy,
-#     )
 
-#     file_paths = [json_file_path, zipped_json_file_path]
-#     fds = [FileDescriptor(fp, 0, uuid.uuid4()) for fp in file_paths]
-
-#     for fd in fds:
-#         ingest_client.ingest_from_file(fd, json_ingestion_props)
-
-#     assert_rows_added(4)
-
-
-# def test_json_ingestion_ingest_by_tag():
-#     json_ingestion_props = IngestionProperties(
-#         test_db,
-#         test_table,
-#         data_format=DataFormat.JSON,
-#         ingestion_mapping=TestData.test_table_json_mappings(),
-#         ingest_if_not_exists=["ingestByTag"],
-#         report_level=ReportLevel.FailuresAndSuccesses,
-#         drop_by_tags=["drop", "drop-by"],
-#         flush_immediately=True,
-#     )
-
-#     for f in [json_file_path, zipped_json_file_path]:
-#         ingest_client.ingest_from_file(f, json_ingestion_props)
-
-#     assert_rows_added(0)
-
-
-# def test_tsv_ingestion_csv_mapping():
-#     tsv_ingestion_props = IngestionProperties(
-#         test_db,
-#         test_table,
-#         flush_immediately=True,
-#         data_format=DataFormat.TSV,
-#         ingestion_mapping=TestData.test_table_csv_mappings(),
-#         report_level=ReportLevel.FailuresAndSuccesses,
-#     )
-
-#     ingest_client.ingest_from_file(tsv_file_path, tsv_ingestion_props)
-
-#     assert_rows_added(10)
-
-
-# def test_streaming_ingest_from_opened_file():
-#     client.execute(test_db, CLEAR_DB_CACHE)
-#     ingestion_properties = IngestionProperties(database=test_db, table=test_table, data_format=DataFormat.CSV)
-
-#     with open(csv_file_path, "r") as stream:
-#         streaming_ingest_client.ingest_from_stream(stream, ingestion_properties=ingestion_properties)
-
-#     assert_rows_added(10, timeout=120)
-
-
-# def test_streaming_ingest_from_csv_file():
-#     client.execute(test_db, CLEAR_DB_CACHE)
-#     ingestion_properties = IngestionProperties(database=test_db, table=test_table, flush_immediately=True, data_format=DataFormat.CSV)
-
-#     for f in [csv_file_path, zipped_csv_file_path]:
-#         streaming_ingest_client.ingest_from_file(f, ingestion_properties=ingestion_properties)
-
-#     assert_rows_added(20, timeout=120)
-
-
-# def test_streaming_ingest_from_json_file():
-#     client.execute(test_db, CLEAR_DB_CACHE)
-#     ingestion_properties = IngestionProperties(
-#         database=test_db,
-#         table=test_table,
-#         flush_immediately=True,
-#         data_format=DataFormat.JSON,
-#         ingestion_mapping_reference="JsonMapping",
-#         ingestion_mapping_type=IngestionMappingType.JSON,
-#     )
-
-#     for f in [json_file_path, zipped_json_file_path]:
-#         streaming_ingest_client.ingest_from_file(f, ingestion_properties=ingestion_properties)
-
-#     assert_rows_added(4, timeout=120)
-
-
-# def test_streaming_ingest_from_csv_io_streams():
-#     client.execute(test_db, CLEAR_DB_CACHE)
-#     ingestion_properties = IngestionProperties(database=test_db, table=test_table, data_format=DataFormat.CSV)
-#     byte_sequence = b'0,00000000-0000-0000-0001-020304050607,0,0,0,0,0,0,0,0,0,0,2014-01-01T01:01:01.0000000Z,Zero,"Zero",0,00:00:00,,null'
-#     bytes_stream = io.BytesIO(byte_sequence)
-#     streaming_ingest_client.ingest_from_stream(bytes_stream, ingestion_properties=ingestion_properties)
-
-#     str_sequence = '0,00000000-0000-0000-0001-020304050607,0,0,0,0,0,0,0,0,0,0,2014-01-01T01:01:01.0000000Z,Zero,"Zero",0,00:00:00,,null'
-#     str_stream = io.StringIO(str_sequence)
-#     streaming_ingest_client.ingest_from_stream(str_stream, ingestion_properties=ingestion_properties)
-
-#     assert_rows_added(2, timeout=120)
-
-
-# def test_streaming_ingest_from_json_io_streams():
-#     ingestion_properties = IngestionProperties(
-#         database=test_db,
-#         table=test_table,
-#         data_format=DataFormat.JSON,
-#         flush_immediately=True,
-#         ingestion_mapping_reference="JsonMapping",
-#         ingestion_mapping_type=IngestionMappingType.JSON,
-#     )
-
-#     byte_sequence = b'{"rownumber": 0, "rowguid": "00000000-0000-0000-0001-020304050607", "xdouble": 0.0, "xfloat": 0.0, "xbool": 0, "xint16": 0, "xint32": 0, "xint64": 0, "xunit8": 0, "xuint16": 0, "xunit32": 0, "xunit64": 0, "xdate": "2014-01-01T01:01:01Z", "xsmalltext": "Zero", "xtext": "Zero", "xnumberAsText": "0", "xtime": "00:00:00", "xtextWithNulls": null, "xdynamicWithNulls": ""}'
-#     bytes_stream = io.BytesIO(byte_sequence)
-#     streaming_ingest_client.ingest_from_stream(bytes_stream, ingestion_properties=ingestion_properties)
-
-#     str_sequence = '{"rownumber": 0, "rowguid": "00000000-0000-0000-0001-020304050607", "xdouble": 0.0, "xfloat": 0.0, "xbool": 0, "xint16": 0, "xint32": 0, "xint64": 0, "xunit8": 0, "xuint16": 0, "xunit32": 0, "xunit64": 0, "xdate": "2014-01-01T01:01:01Z", "xsmalltext": "Zero", "xtext": "Zero", "xnumberAsText": "0", "xtime": "00:00:00", "xtextWithNulls": null, "xdynamicWithNulls": ""}'
-#     str_stream = io.StringIO(str_sequence)
-#     streaming_ingest_client.ingest_from_stream(str_stream, ingestion_properties=ingestion_properties)
-
-#     assert_rows_added(2, timeout=120)
-
-
-# def test_streaming_ingest_from_dataframe():
-#     from pandas import DataFrame
-
-#     fields = [
-#         "rownumber",
-#         "rowguid",
-#         "xdouble",
-#         "xfloat",
-#         "xbool",
-#         "xint16",
-#         "xint32",
-#         "xint64",
-#         "xunit8",
-#         "xuint16",
-#         "xunit32",
-#         "xunit64",
-#         "xdate",
-#         "xsmalltext",
-#         "xtext",
-#         "xnumberAsText",
-#         "xtime",
-#         "xtextWithNulls",
-#         "xdynamicWithNulls",
-#     ]
-#     rows = [[0, "00000000-0000-0000-0001-020304050607", 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, "2014-01-01T01:01:01Z", "Zero", "Zero", "0", "00:00:00", None, ""]]
-#     df = DataFrame(data=rows, columns=fields)
-#     ingestion_properties = IngestionProperties(database=test_db, table=test_table, flush_immediately=True, data_format=DataFormat.CSV)
-#     ingest_client.ingest_from_dataframe(df, ingestion_properties)
-
-#     assert_rows_added(1, timeout=120)

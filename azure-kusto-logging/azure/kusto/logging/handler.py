@@ -21,7 +21,7 @@ class KustoHandler(logging.Handler):
             self.client = KustoIngestClient(kcsb)
 
         self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
-        self.fields = None
+        #self.fields = None
         self.rows = []
 
     def emit(self, record):
@@ -29,17 +29,21 @@ class KustoHandler(logging.Handler):
         Emit a record.
         Simply add the record in the records list
         """
-        if not self.fields:
-            self.fields = list(record.__dict__.keys())
+        #print(record)
+        # if len(record.__dict__.keys()) > len(self.field):
+        #     self.fields = list(record.__dict__.keys())
 
-        self.rows.append(list(record.__dict__.values()))
+        self.rows.append(record.__dict__)
 
     def flush(self):
         """
         Flush the records in Kusto
         """
         if self.rows:
-            df = pandas.DataFrame(data=self.rows, columns=self.fields)
+            #df = pandas.DataFrame(data=self.rows, columns=self.fields)
+            df = pandas.DataFrame.from_dict(self.rows, orient='columns')
+            
+            print(df.head(5))
             self.client.ingest_from_dataframe(df, self.ingestion_properties)
             self.rows.clear()
 
