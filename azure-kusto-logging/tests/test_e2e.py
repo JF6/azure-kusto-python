@@ -37,6 +37,7 @@ def dm_kcsb_from_env() -> KustoConnectionStringBuilder:
     return KustoConnectionStringBuilder.with_aad_application_key_authentication(dm_cs, app_id, app_key, auth_id)
 
 
+#TODO
 def teardown_module():
     #client.execute(test_db, ".drop table {} ifexists".format(test_table))
     pass
@@ -96,7 +97,7 @@ def assert_rows_added(expected: int, level: int, timeout=60):
         timeout -= 1
 
         try:
-            response = client.execute(test_db, "{} | where levelno=={} | count".format(test_table, level))
+            response = client.execute(test_db, "{} | where levelno=={} | where msg != 'Flush' | count".format(test_table, level))
         except KustoServiceError:
             continue
 
@@ -117,32 +118,27 @@ def test_info_logging(caplog):
     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
     for i in range(0,50):
         logging.info("Test info {0}".format(i))
-    logging.error('The end.')
+    logging.error('Flush')
     assert_rows_added(50, logging.INFO)
 
-# def test_debug_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="adal-python")
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,100):
-#         logging.debug("Test debug {0}".format(i))
-#     logging.error('The end.')
-#     assert_rows_added(100, logging.DEBUG)
+def test_debug_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,100):
+        logging.debug("Test debug {0}".format(i))
+    logging.error('Flush')
+    assert_rows_added(100, logging.DEBUG)
 
+def test_critical_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,5):
+        logging.fatal("Test fatal {0}".format(i))
+    assert_rows_added(5, logging.CRITICAL)
 
-
-
-# def test_exception_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="adal-python")
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,5):
-#         logging.exception("Test exception {0}".format(i))
-#     assert_rows_added(5, logging.CRITICAL)
-
-# def test_exception_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,10):
-#         logging.error("Test error {0}".format(i))
-#     assert_rows_added(10, logging.ERROR)
-
-
+def test_error_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,10):
+        logging.error("Test error {0}".format(i))
+    assert_rows_added(10, logging.ERROR)
 
