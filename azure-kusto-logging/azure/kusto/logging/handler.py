@@ -43,7 +43,7 @@ class KustoHandler(logging.Handler):
             #df = pandas.DataFrame(data=self.rows, columns=self.fields)
             df = pandas.DataFrame.from_dict(self.rows, orient='columns')
             
-            print(df.head(5))
+            #print(df.head(5))
             self.client.ingest_from_dataframe(df, self.ingestion_properties)
             self.rows.clear()
 

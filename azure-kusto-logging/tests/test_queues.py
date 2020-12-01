@@ -16,6 +16,8 @@ from azure.kusto.logging import (
     FlushableMemoryHandler,
     KustoHandler,
 )
+from queue import Queue
+from logging.handlers import QueueHandler, QueueListener
 
 CLEAR_DB_CACHE = ".clear database cache streamingingestion schema"
 
@@ -39,6 +41,9 @@ def dm_kcsb_from_env() -> KustoConnectionStringBuilder:
 
 #TODO
 def teardown_module():
+    global ql
+
+    ql.stop()
     #client.execute(test_db, ".drop table {} ifexists".format(test_table))
     pass
 
@@ -74,6 +79,9 @@ current_count = 0
 
 kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
 
+q = Queue()
+qh = QueueHandler(q)
+
 memoryhandler = FlushableMemoryHandler(
     capacity=8192,
     flushLevel=logging.ERROR,
@@ -81,8 +89,12 @@ memoryhandler = FlushableMemoryHandler(
     flushTarget=True,
     flushOnClose=True
 )
+
+ql = QueueListener(q, memoryhandler)
+ql.start()
+
 logger = logging.getLogger()
-logger.addHandler(memoryhandler)
+logger.addHandler(qh)
 logger.setLevel(logging.DEBUG)
 
 
@@ -113,32 +125,31 @@ def assert_rows_added(expected: int, level: int, timeout=60):
 
 
 
-# def test_info_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="adal-python")
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,50):
-#         logging.info("Test info {0}".format(i))
-#     logging.error('Flush')
-#     assert_rows_added(50, logging.INFO)
+def test_qh_info_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,50):
+        logging.info("Test info {0}".format(i))
+    logging.error('Flush')
+    assert_rows_added(50, logging.INFO)
 
-# def test_debug_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="adal-python")
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,100):
-#         logging.debug("Test debug {0}".format(i))
-#     logging.error('Flush')
-#     assert_rows_added(100, logging.DEBUG)
+def test_qh_debug_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,100):
+        logging.debug("Test debug {0}".format(i))
+    logging.error('Flush')
+    assert_rows_added(100, logging.DEBUG)
 
-# def test_critical_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="adal-python")
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,5):
-#         logging.fatal("Test fatal {0}".format(i))
-#     assert_rows_added(5, logging.CRITICAL)
+def test_qh_critical_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="adal-python")
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,5):
+        logging.fatal("Test fatal {0}".format(i))
+    assert_rows_added(5, logging.CRITICAL)
 
-# def test_error_logging(caplog):
-#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-#     for i in range(0,10):
-#         logging.error("Test error {0}".format(i))
-#     assert_rows_added(10, logging.ERROR)
-
+def test_qh_error_logging(caplog):
+    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+    for i in range(0,10):
+        logging.error("Test error {0}".format(i))
+    assert_rows_added(10, logging.ERROR)
