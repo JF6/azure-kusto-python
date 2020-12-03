@@ -48,54 +48,50 @@ def teardown_module():
     pass
 
 
-def get_file_path() -> str:
-    current_dir = os.getcwd()
-    path_parts = ["azure-kusto-ingest", "tests", "input"]
-    missing_path_parts = []
-    for path_part in path_parts:
-        if path_part not in current_dir:
-            missing_path_parts.append(path_part)
-    return os.path.join(current_dir, *missing_path_parts)
+def setup_module():
+    global ql
+    global client
+    global test_db
+    global test_table
 
+    # Init clients
+    test_db = os.environ.get("TEST_DATABASE")
 
-# Init clients
-test_db = os.environ.get("TEST_DATABASE")
+    python_version = "_".join([str(v) for v in sys.version_info[:3]])
+    test_table = "python_test_{0}_{1}_{2}".format(python_version, str(int(time.time())), random.randint(1, 100000))
+    kcsb = engine_kcsb_from_env()
+    client = KustoClient(kcsb)
+    # ingest_client = KustoIngestClient(dm_kcsb_from_env())
+    # streaming_ingest_client = KustoStreamingIngestClient(engine_kcsb_from_env())
 
-python_version = "_".join([str(v) for v in sys.version_info[:3]])
-test_table = "python_test_{0}_{1}_{2}".format(python_version, str(int(time.time())), random.randint(1, 100000))
-kcsb = engine_kcsb_from_env()
-client = KustoClient(kcsb)
-# ingest_client = KustoIngestClient(dm_kcsb_from_env())
-# streaming_ingest_client = KustoStreamingIngestClient(engine_kcsb_from_env())
+    start_time = datetime.datetime.now(datetime.timezone.utc)
 
-start_time = datetime.datetime.now(datetime.timezone.utc)
+    with open("azure-kusto-logging/tests/createTable.kql") as f:
+        tbl_create = f.read()
+    client.execute(test_db,tbl_create.format(test_table))
+    sleep(100) # wait for the table to be created
 
-with open("azure-kusto-logging/tests/createTable.kql") as f:
-    tbl_create = f.read()
-client.execute(test_db,tbl_create.format(test_table))
-sleep(100) # wait for the table to be created
+    current_count = 0
 
-current_count = 0
+    kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
 
-kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
+    q = Queue()
+    qh = QueueHandler(q)
 
-q = Queue()
-qh = QueueHandler(q)
+    memoryhandler = FlushableMemoryHandler(
+        capacity=8192,
+        flushLevel=logging.ERROR,
+        target=kh,
+        flushTarget=True,
+        flushOnClose=True
+    )
 
-memoryhandler = FlushableMemoryHandler(
-    capacity=8192,
-    flushLevel=logging.ERROR,
-    target=kh,
-    flushTarget=True,
-    flushOnClose=True
-)
+    ql = QueueListener(q, memoryhandler)
+    ql.start()
 
-ql = QueueListener(q, memoryhandler)
-ql.start()
-
-logger = logging.getLogger()
-logger.addHandler(qh)
-logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger()
+    logger.addHandler(qh)
+    logger.setLevel(logging.DEBUG)
 
 
 
@@ -133,13 +129,13 @@ def test_qh_info_logging(caplog):
     logging.error('Flush')
     assert_rows_added(50, logging.INFO)
 
-def test_qh_debug_logging(caplog):
-    caplog.set_level(logging.CRITICAL, logger="adal-python")
-    caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-    for i in range(0,100):
-        logging.debug("Test debug {0}".format(i))
-    logging.error('Flush')
-    assert_rows_added(100, logging.DEBUG)
+# def test_qh_debug_logging(caplog):
+#     caplog.set_level(logging.CRITICAL, logger="adal-python")
+#     caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
+#     for i in range(0,100):
+#         logging.debug("Test debug {0}".format(i))
+#     logging.error('Flush')
+#     assert_rows_added(100, logging.DEBUG)
 
 def test_qh_critical_logging(caplog):
     caplog.set_level(logging.CRITICAL, logger="adal-python")

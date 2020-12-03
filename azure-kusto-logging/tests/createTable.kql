@@ -18,5 +18,7 @@
     thread:long,
     threadName:string,
     processName:string,
-    process:long
+    process:long,
+    message:string,
+    asctime:datetime
 )

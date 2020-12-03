@@ -1,5 +1,6 @@
 import logging
 import pandas
+import sys
 
 from azure.kusto.ingest import DataFormat
 
@@ -21,7 +22,6 @@ class KustoHandler(logging.Handler):
             self.client = KustoIngestClient(kcsb)
 
         self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
-        #self.fields = None
         self.rows = []
 
     def emit(self, record):
@@ -33,6 +33,8 @@ class KustoHandler(logging.Handler):
         # if len(record.__dict__.keys()) > len(self.field):
         #     self.fields = list(record.__dict__.keys())
 
+        if not self.rows:
+            self.first_record = record      # in case of error in flush, dump the first record.
         self.rows.append(record.__dict__)
 
     def flush(self):
@@ -44,8 +46,16 @@ class KustoHandler(logging.Handler):
             df = pandas.DataFrame.from_dict(self.rows, orient='columns')
             
             #print(df.head(5))
-            self.client.ingest_from_dataframe(df, self.ingestion_properties)
-            self.rows.clear()
+            try:
+                self.client.ingest_from_dataframe(df, self.ingestion_properties)
+            except Exception as ex:
+                logging.Handler.handleError(self, self.first_record)
+                # print("Error kusto logging -> {}".format(ex), file=sys.stderr)
+                # print(df, file=sys.stderr)
+                # print("", file=sys.stderr)
+            finally:
+                self.first_record = None
+                self.rows.clear()
 
     def __repr__(self):
         level = logging.Handler.getLevelName(self.level)
