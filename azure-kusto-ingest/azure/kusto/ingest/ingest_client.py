@@ -63,8 +63,6 @@ class KustoIngestClient:
         ingestion_properties.format = DataFormat.CSV
         try:
             self.ingest_from_file(temp_file_path, ingestion_properties)
-        except:
-            raise
         finally:
             os.unlink(temp_file_path)
 
