@@ -64,7 +64,6 @@ class KustoIngestClient:
         try:
             self.ingest_from_file(temp_file_path, ingestion_properties)
         except:
-            os.unlink(temp_file_path)
             raise
         finally:
             os.unlink(temp_file_path)
