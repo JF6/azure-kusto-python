@@ -16,6 +16,17 @@ class KustoHandler(logging.Handler):
         logging.Handler.__init__(self)
         from azure.kusto.ingest import KustoIngestClient, IngestionProperties, KustoStreamingIngestClient
 
+        logging.getLogger("azure").propagate = False
+        # logging.getLogger("oauthlib").propagate = False
+        # logging.getLogger("msrest").propagate = False
+        # logging.getLogger("msal").propagate = False
+        # logging.getLogger("msal_extensions").propagate = False
+        # logging.getLogger("asyncio").propagate = False
+        # logging.getLogger("concurrent").propagate = False
+        logging.getLogger("adal-python").propagate = False
+        logging.getLogger("requests").propagate = False
+        logging.getLogger("urllib3").propagate = False
+
         if useStreaming:
             self.client = KustoStreamingIngestClient(kcsb)
         else:
