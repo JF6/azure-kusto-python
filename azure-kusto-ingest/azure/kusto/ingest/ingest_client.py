@@ -5,6 +5,7 @@ import random
 import tempfile
 import time
 import uuid
+import threading
 from typing import Union
 from urllib.parse import urlparse
 
@@ -55,15 +56,16 @@ class KustoIngestClient:
         if not isinstance(df, DataFrame):
             raise ValueError("Expected DataFrame instance, found {}".format(type(df)))
 
-        file_name = "df_{id}_{timestamp}_{pid}.csv.gz".format(id=id(df), timestamp=int(time.time()), pid=os.getpid())
+        file_name = "zdf_{id}_{timestamp}_{tid}.csv.gz".format(id=id(df), timestamp=int(time.time()), tid=threading.get_ident())
         temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
-
+        import sys
+        print(temp_file_path, file=sys.stderr)
         df.to_csv(temp_file_path, index=False, encoding="utf-8", header=False, compression="gzip")
 
         ingestion_properties.format = DataFormat.CSV
-
+        #try:
         self.ingest_from_file(temp_file_path, ingestion_properties)
-
+        #finally:
         os.unlink(temp_file_path)
 
     def ingest_from_file(self, file_descriptor: Union[FileDescriptor, str], ingestion_properties: IngestionProperties):
