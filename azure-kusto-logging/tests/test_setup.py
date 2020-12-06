@@ -12,6 +12,7 @@ from azure.kusto.logging import (
     KustoHandler,
 )
 
+
 class BaseTestKustoLogging:
     @classmethod
     def setup_class(cls):
@@ -21,7 +22,7 @@ class BaseTestKustoLogging:
         app_key = os.environ.get("APP_KEY")
         auth_id = os.environ.get("AUTH_ID")
         cls.kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(engine_cs, app_id, app_key, auth_id)
-        
+
         cls.test_db = os.environ.get("TEST_DATABASE")
         cls.client = KustoClient(cls.kcsb)
 
@@ -30,7 +31,7 @@ class BaseTestKustoLogging:
 
         with open("azure-kusto-logging/tests/createTable.kql") as f:
             tbl_create = f.read()
-        cls.client.execute(cls.test_db,tbl_create.format(cls.test_table))
+        cls.client.execute(cls.test_db, tbl_create.format(cls.test_table))
 
         timeout = 200
         csv_ingest_props = IngestionProperties(
@@ -42,14 +43,14 @@ class BaseTestKustoLogging:
 
         # Wait for the table to be able to ingest.
         streaming_ingest_client = KustoStreamingIngestClient(cls.kcsb)
-        df = pandas.DataFrame.from_dict({"msg": ["Flush"]}) 
+        df = pandas.DataFrame.from_dict({"msg": ["Flush"]})
         while timeout > 0:
             time.sleep(1)
             timeout -= 1
 
             try:
                 streaming_ingest_client.ingest_from_dataframe(df, csv_ingest_props)
-                response = cls.client.execute(cls.test_db,"{}  where name == 'Flush' | count".format(cls.test_table))
+                response = cls.client.execute(cls.test_db, "{}  where name == 'Flush' | count".format(cls.test_table))
             except KustoServiceError:
                 continue
 
@@ -60,7 +61,6 @@ class BaseTestKustoLogging:
                 if actual >= 1:
                     break
 
-    
     @classmethod
     def teardown_class(cls):
         cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
@@ -69,7 +69,7 @@ class BaseTestKustoLogging:
     @classmethod
     # assertions
     def assert_rows_added(cls, expected: int, level: int, timeout=60):
-        current_count=0
+        current_count = 0
 
         actual = 0
         while timeout > 0:

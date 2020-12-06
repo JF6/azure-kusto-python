@@ -23,12 +23,12 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         cls.kh.setLevel(logging.DEBUG)
         logging.getLogger().addHandler(cls.kh)
         logging.getLogger().setLevel(logging.DEBUG)
-        
+
     def test_info_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 3
-        for i in range(0,nb_of_tests):
+        for i in range(0, nb_of_tests):
             logging.info("Test info {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.INFO)
@@ -37,7 +37,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 4
-        for i in range(0,nb_of_tests):
+        for i in range(0, nb_of_tests):
             logging.debug("Test debug {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.DEBUG)
@@ -46,7 +46,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 2
-        for i in range(0,nb_of_tests):
+        for i in range(0, nb_of_tests):
             logging.error("Test error {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.ERROR)
@@ -55,7 +55,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 1
-        for i in range(0,nb_of_tests):
+        for i in range(0, nb_of_tests):
             logging.critical("Test critical {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.CRITICAL)

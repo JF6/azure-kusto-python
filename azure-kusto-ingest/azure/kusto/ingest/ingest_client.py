@@ -58,8 +58,6 @@ class KustoIngestClient:
 
         file_name = "zdf_{id}_{timestamp}_{tid}.csv.gz".format(id=id(df), timestamp=int(time.time()), tid=threading.get_ident())
         temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
-        import sys
-        print(temp_file_path, file=sys.stderr)
         df.to_csv(temp_file_path, index=False, encoding="utf-8", header=False, compression="gzip")
 
         ingestion_properties.format = DataFormat.CSV
