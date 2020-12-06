@@ -12,8 +12,6 @@ from azure.kusto.logging import (
     KustoHandler,
 )
 
-
-
 class BaseTestKustoLogging:
     @classmethod
     def setup_class(cls):
@@ -33,7 +31,6 @@ class BaseTestKustoLogging:
         with open("azure-kusto-logging/tests/createTable.kql") as f:
             tbl_create = f.read()
         cls.client.execute(cls.test_db,tbl_create.format(cls.test_table))
-        #time.sleep(200) # wait for the table to be created
 
         timeout = 200
         csv_ingest_props = IngestionProperties(
@@ -66,7 +63,7 @@ class BaseTestKustoLogging:
     
     @classmethod
     def teardown_class(cls):
-        #client.execute(test_db, ".drop table {} ifexists".format(test_table))
+        cls.client.execute(test_db, ".drop table {} ifexists".format(cls.test_table))
         pass
 
     @classmethod
