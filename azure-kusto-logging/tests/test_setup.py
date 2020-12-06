@@ -63,7 +63,7 @@ class BaseTestKustoLogging:
     
     @classmethod
     def teardown_class(cls):
-        cls.client.execute(test_db, ".drop table {} ifexists".format(cls.test_table))
+        cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
         pass
 
     @classmethod
