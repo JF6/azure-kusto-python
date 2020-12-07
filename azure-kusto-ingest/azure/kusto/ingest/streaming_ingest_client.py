@@ -48,9 +48,10 @@ class KustoStreamingIngestClient:
 
         ingestion_properties.format = DataFormat.CSV
 
-        self.ingest_from_file(temp_file_path, ingestion_properties)
-
-        os.unlink(temp_file_path)
+        try:
+            self.ingest_from_file(temp_file_path, ingestion_properties)
+        finally:
+            os.unlink(temp_file_path)
 
     def ingest_from_file(self, file_descriptor: Union[FileDescriptor, str], ingestion_properties: IngestionProperties):
         """Ingest from local files.
