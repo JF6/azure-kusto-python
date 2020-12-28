@@ -4,6 +4,7 @@ import logging
 import time
 import random
 import pandas
+import pytest
 
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
@@ -24,6 +25,9 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
     @classmethod
     def setup_class(cls):
         super().setup_class()
+        if  cls.is_live_testing_ready == False:
+            pytest.skip("No backend end available", allow_module_level=True)
+
         kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True)
         kh.setLevel(logging.DEBUG)
 
