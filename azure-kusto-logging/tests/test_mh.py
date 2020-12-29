@@ -32,6 +32,11 @@ class TestKustoMemoryHandlerLogging(BaseTestKustoLogging):
         logger.addHandler(cls.memoryhandler)
         logger.setLevel(logging.DEBUG)
 
+    def teardown_class(cls):
+        logging.getLogger().removeHandler(cls.memoryhandler)
+        super().teardown_class()
+
+
     def test_info_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")

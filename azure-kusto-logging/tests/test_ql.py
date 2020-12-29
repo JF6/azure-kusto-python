@@ -53,7 +53,7 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 3
         for i in range(0, nb_of_tests):
-            logging.info("Test info {}".format(i))
+            logging.info("Test {} info {}".format(__file__, i))
         logging.error("Flush")
         self.assert_rows_added(nb_of_tests, logging.INFO)
 

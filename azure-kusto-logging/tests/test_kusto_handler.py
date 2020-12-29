@@ -48,23 +48,26 @@ def mocked_client_execute(*args, **kwargs):
 class KustoHandlerTests(unittest.TestCase):
     """Tests class for KustoHandler."""
 
+    def setup_class(cls):
+        cls.kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication("https://somecluster.kusto.windows.net", "a", "b", "c")
+        cls.kh = KustoHandler(kcsb=cls.kcsb, database="tst", table="tbl", useStreaming=True)
+
+    def teardown_class(cls):
+        logging.getLogger().removeHandler(cls.kh)
+
     #@patch("requests.Session.post", side_effect=mocked_requests_post)
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_info_logging(self, mock_execute):
-        kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication("https://somecluster.kusto.windows.net", "a", "b", "c")
-        kh = KustoHandler(kcsb=kcsb, database="tst", table="tbl", useStreaming=True)
-        logging.getLogger().addHandler(kh)
+        logging.getLogger().addHandler(self.kh)
         logging.getLogger().setLevel(logging.INFO)
         logging.info("Test1")
-        assert len(kh.rows)==1
+        assert len(self.kh.rows)==1
         info_msg = "Test2"
         logging.info(info_msg)
-        assert len(kh.rows)==2
-        assert __name__ in kh.rows[1]['filename']
-        assert info_msg == kh.rows[1]['message']
+        assert len(self.kh.rows)==2
+        assert __name__ in self.kh.rows[1]['filename']
+        assert info_msg == self.kh.rows[1]['message']
         logging.debug("Test3")  # Won't appear
-        assert len(kh.rows)==2
-        kh.flush()
-        assert len(kh.rows)==0
-
-
+        assert len(self.kh.rows)==2
+        self.kh.flush()
+        assert len(self.kh.rows)==0

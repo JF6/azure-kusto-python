@@ -27,12 +27,16 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         logging.getLogger().addHandler(cls.kh)
         logging.getLogger().setLevel(logging.DEBUG)
 
+    def teardown_class(cls):
+        logging.getLogger().removeHandler(cls.kh)
+        super().teardown_class()
+
     def test_info_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 3
         for i in range(0, nb_of_tests):
-            logging.info("Test info {}".format(i))
+            logging.info("Test {} info {}".format(__file__, i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.INFO)
 
