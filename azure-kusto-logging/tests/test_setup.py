@@ -54,7 +54,7 @@ class BaseTestKustoLogging:
 
                 try:
                     streaming_ingest_client.ingest_from_dataframe(df, csv_ingest_props)
-                    response = cls.client.execute(cls.test_db, "{}  where name == 'Flush' | count".format(cls.test_table))
+                    response = cls.client.execute(cls.test_db, "{} | where name == 'Flush' | count".format(cls.test_table))
                 except KustoServiceError:
                     continue
 
