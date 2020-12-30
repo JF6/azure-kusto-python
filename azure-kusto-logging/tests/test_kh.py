@@ -20,7 +20,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
     @classmethod
     def setup_class(cls):
         super().setup_class()
-        if  cls.is_live_testing_ready == False:
+        if cls.is_live_testing_ready == False:
             pytest.skip("No backend end available", allow_module_level=True)
         cls.kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True)
         cls.kh.setLevel(logging.DEBUG)

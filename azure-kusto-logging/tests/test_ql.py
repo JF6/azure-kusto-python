@@ -25,18 +25,16 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
     @classmethod
     def setup_class(cls):
         super().setup_class()
-        if  cls.is_live_testing_ready == False:
+        if cls.is_live_testing_ready == False:
             pytest.skip("No backend end available", allow_module_level=True)
 
-        kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True)
+        kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True, capacity=50000, flushLevel=logging.CRITICAL)
         kh.setLevel(logging.DEBUG)
 
         q = Queue()
         qh = QueueHandler(q)
 
-        memoryhandler = FlushableMemoryHandler(capacity=8192, flushLevel=logging.ERROR, target=kh, flushTarget=True, flushOnClose=True)
-        memoryhandler.setLevel(logging.DEBUG)
-        cls.ql = QueueListener(q, memoryhandler)
+        cls.ql = QueueListener(q, kh)
         cls.ql.start()
 
         logger = logging.getLogger()
@@ -51,33 +49,34 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
     def test_info_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-        nb_of_tests = 3
+        nb_of_tests = 3000000
         for i in range(0, nb_of_tests):
             logging.info("Test {} info {}".format(__file__, i))
-        logging.error("Flush")
-        self.assert_rows_added(nb_of_tests, logging.INFO)
+        logging.critical("Flush")
+        self.assert_rows_added(nb_of_tests, logging.INFO, timeout=500)
 
     def test_debug_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-        nb_of_tests = 4
+        nb_of_tests = 400000
         for i in range(0, nb_of_tests):
             logging.debug("Test debug {}".format(i))
-        logging.error("Flush")
-        self.assert_rows_added(nb_of_tests, logging.DEBUG)
+        logging.critical("Flush")
+        self.assert_rows_added(nb_of_tests, logging.DEBUG, timeout=500)
 
     def test_error_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-        nb_of_tests = 2
+        nb_of_tests = 200000
         for i in range(0, nb_of_tests):
             logging.error("Test error {}".format(i))
-        self.assert_rows_added(nb_of_tests, logging.ERROR)
+        logging.critical("Flush")
+        self.assert_rows_added(nb_of_tests, logging.ERROR, timeout=500)
 
     def test_critical_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
-        nb_of_tests = 1
+        nb_of_tests = 20
         for i in range(0, nb_of_tests):
             logging.critical("Test critical {}".format(i))
         self.assert_rows_added(nb_of_tests, logging.CRITICAL)

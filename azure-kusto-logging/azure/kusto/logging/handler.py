@@ -7,16 +7,25 @@ import pandas
 from azure.kusto.ingest import DataFormat
 
 
-class KustoHandler(logging.Handler):
+class KustoHandler(logging.handlers.MemoryHandler):
     """
     A handler class which writes un-formatted logging records to Kusto.
     """
 
-    def __init__(self, kcsb, database, table, data_format=DataFormat.CSV, useStreaming=False):
+    def __init__(
+        self,
+        kcsb,
+        database,
+        table,
+        data_format=DataFormat.CSV,
+        useStreaming=False,
+        capacity=8192,
+        flushLevel=logging.ERROR,
+        ):
         """
         Initialize the appropriate kusto clienrt.
         """
-        logging.Handler.__init__(self)
+        super().__init__(capacity, flushLevel=flushLevel)
         from azure.kusto.ingest import (
             KustoIngestClient,
             IngestionProperties,
@@ -40,7 +49,7 @@ class KustoHandler(logging.Handler):
             self.client = KustoIngestClient(kcsb)
 
         self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
-        self.rows = []
+        # self.rows = []
         self.first_record = None
 
     def emit(self, record):
@@ -52,16 +61,20 @@ class KustoHandler(logging.Handler):
         # if len(record.__dict__.keys()) > len(self.field):
         #     self.fields = list(record.__dict__.keys())
 
-        if not self.rows:
+        if not self.buffer:
             self.first_record = record  # in case of error in flush, dump the first record.
-        self.rows.append(record.__dict__)
+        super().emit(record)
+        # self.buffer.append(record.__dict__)
+        # if self.shouldFlush(record.__dict)
 
     def flush(self):
         """
         Flush the records in Kusto
         """
-        if self.rows:
-            records_to_write = pandas.DataFrame.from_dict(self.rows, orient="columns")
+        if self.buffer:
+            self.acquire()
+            log_dict = [x.__dict__ for x in self.buffer]
+            records_to_write = pandas.DataFrame.from_dict(log_dict, orient="columns")
 
             # print(df.head(5))
             try:
@@ -70,4 +83,5 @@ class KustoHandler(logging.Handler):
                 logging.Handler.handleError(self, self.first_record)
             finally:
                 self.first_record = None
-                self.rows.clear()
+                self.buffer.clear()
+                self.release()

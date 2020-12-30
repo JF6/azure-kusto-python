@@ -12,6 +12,7 @@ from azure.kusto.logging import (
     KustoHandler,
 )
 
+
 class BaseTestKustoLogging:
     @classmethod
     def setup_class(cls):
@@ -47,7 +48,7 @@ class BaseTestKustoLogging:
             # Wait for the table to be able to ingest.
             streaming_ingest_client = KustoStreamingIngestClient(cls.kcsb)
             df = pandas.DataFrame.from_dict({"msg": ["Flush"]})
-            
+
             while timeout > 0:
                 time.sleep(1)
                 timeout -= 1
@@ -70,7 +71,7 @@ class BaseTestKustoLogging:
 
     @classmethod
     def teardown_class(cls):
-        cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
+        # cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
         pass
 
     @classmethod
