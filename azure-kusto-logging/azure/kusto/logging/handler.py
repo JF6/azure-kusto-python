@@ -76,7 +76,6 @@ class KustoHandler(logging.handlers.MemoryHandler):
             log_dict = [x.__dict__ for x in self.buffer]
             records_to_write = pandas.DataFrame.from_dict(log_dict, orient="columns")
 
-            # print(df.head(5))
             try:
                 self.client.ingest_from_dataframe(records_to_write, self.ingestion_properties)
             except Exception:

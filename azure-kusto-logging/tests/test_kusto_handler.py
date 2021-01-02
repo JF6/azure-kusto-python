@@ -32,10 +32,10 @@ def mocked_client_execute(*args, **kwargs):
             return self.json_data
 
     if args[0] == "https://somecluster.kusto.windows.net/v2/rest/query":
-        return MockResponse(json.loads(data), 200)
+        return MockResponse(None, 200)
 
     elif args[0] == "https://somecluster.kusto.windows.net/v1/rest/mgmt":
-        return MockResponse(json.loads(data), 200)
+        return MockResponse(None, 200)
 
     return MockResponse(None, 404)
 
@@ -79,4 +79,16 @@ class KustoHandlerTests(unittest.TestCase):
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_flush(self, mock_execute):
         self.kh.flush()
+        assert len(self.kh.buffer) == 0
+
+
+    @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
+    def test_close(self, mock_execute):
+        self.kh.flush()
+        assert len(self.kh.buffer) == 0
+        info_msg = "Test Close"
+        prev_rows = len(self.kh.buffer)
+        logging.info(info_msg)
+        assert len(self.kh.buffer) == prev_rows + 1
+        self.kh.close()
         assert len(self.kh.buffer) == 0
