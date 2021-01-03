@@ -1,5 +1,7 @@
 import pytest
+
 global has_one_test_failed
+
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):

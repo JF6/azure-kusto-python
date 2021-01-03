@@ -16,8 +16,8 @@ from azure.kusto.logging import (
 
 
 class BaseTestKustoLogging:
-    """Base class for logging tests.
-    """
+    """Base class for logging tests."""
+
     @classmethod
     def setup_class(cls):
         """create the Kusto table and initialize kcsb info"""
@@ -83,7 +83,7 @@ class BaseTestKustoLogging:
 
         if not has_one_test_failed:
             cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
-        
+
     @classmethod
     # assertions
     def assert_rows_added(cls, expected: int, level: int, timeout=60):

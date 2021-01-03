@@ -22,6 +22,7 @@ def do_logging(numberOfMessages):
     for i in range(nb_of_tests):
         logging.info("Test {} info {} from thread {}".format(__file__, i, threading.get_native_id()))
 
+
 class TestKustoHandlerMultiThreadLogging(BaseTestKustoLogging):
     @classmethod
     def setup_class(cls):
@@ -43,7 +44,7 @@ class TestKustoHandlerMultiThreadLogging(BaseTestKustoLogging):
         logging_threads = []
         expected_results = 0
         for i in range(10):
-            nb_of_logging = i*1000
+            nb_of_logging = i * 1000
             x = threading.Thread(target=do_logging, args=(nb_of_logging,))
             x.start()
             expected_results += nb_of_logging
@@ -52,4 +53,3 @@ class TestKustoHandlerMultiThreadLogging(BaseTestKustoLogging):
             t.join()
         self.kh.flush()
         self.assert_rows_added(expected_results, logging.INFO)
-

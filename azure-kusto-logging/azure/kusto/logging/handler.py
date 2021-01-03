@@ -21,7 +21,7 @@ class KustoHandler(logging.handlers.MemoryHandler):
         useStreaming=False,
         capacity=8192,
         flushLevel=logging.ERROR,
-        ):
+    ):
         """
         Initialize the appropriate kusto clienrt.
         """

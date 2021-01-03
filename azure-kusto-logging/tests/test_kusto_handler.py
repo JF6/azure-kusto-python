@@ -31,26 +31,24 @@ def mocked_client_execute(*args, **kwargs):
             """Get json data from response."""
             return self.json_data
 
-    if args[0] == "https://somecluster.kusto.windows.net/v2/rest/query":
+    if "https://somecluster.kusto.windows.net/v2/" in args[0]:
         return MockResponse(None, 200)
 
-    elif args[0] == "https://somecluster.kusto.windows.net/v1/rest/mgmt":
-x        return MockResponse(None, 200)
+    elif "https://somecluster.kusto.windows.net/v1/" in args[0]:
+        return MockResponse(None, 200)
 
     return MockResponse(None, 404)
 
 
 class KustoHandlerTests(unittest.TestCase):
-    """Tests class for KustoHandler."""
+    """Tests class for KustoHandler.
+    Because of the mock, each test must flush (or close)...
+    ... or the framework will try to do it during teardown and will show and exception
+    """
 
     @classmethod
     def setup_class(cls):
-        cls.kcsb = "https://somecluster.kusto.windows.net"
-        # cls.kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(
-        #     "https://somecluster.kusto.windows.net",
-        #     "a",
-        #     "b",
-        #     "291bba3f-e0a5-47bc-a099-3bdcb2a50a05") # tenant guid from doc
+        cls.kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication("https://somecluster.kusto.windows.net", "a", "b", "c")
         cls.kh = KustoHandler(kcsb=cls.kcsb, database="tst", table="tbl", useStreaming=True, capacity=8192)
         logging.getLogger().addHandler(cls.kh)
         logging.getLogger().setLevel(logging.INFO)
@@ -59,12 +57,12 @@ class KustoHandlerTests(unittest.TestCase):
     def teardown_class(cls):
         logging.getLogger().removeHandler(cls.kh)
 
-    # @patch("requests.Session.post", side_effect=mocked_requests_post)
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_info_logging(self, mock_execute):
         prev_rows = len(self.kh.buffer)
         logging.info("Test1")
         assert len(self.kh.buffer) == prev_rows + 1
+        self.kh.flush()
 
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_info_logging_again(self, mock_execute):
@@ -74,18 +72,19 @@ class KustoHandlerTests(unittest.TestCase):
         assert len(self.kh.buffer) == prev_rows + 1
         assert __name__ in self.kh.buffer[-1].__dict__["filename"]
         assert info_msg == self.kh.buffer[-1].__dict__["message"]
+        self.kh.flush()
 
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_debug_logging(self, mock_execute):
         prev_rows = len(self.kh.buffer)
-        logging.debug("Test3")  # Won't appear 
+        logging.debug("Test3")  # Won't appear
         assert len(self.kh.buffer) == prev_rows
+        self.kh.flush()  # not strictly necessary
 
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_flush(self, mock_execute):
         self.kh.flush()
         assert len(self.kh.buffer) == 0
-
 
     @patch("azure.kusto.data.KustoClient._execute", side_effect=mocked_client_execute)
     def test_close(self, mock_execute):
