@@ -35,14 +35,14 @@ class TestKustoHandlerMultiThreadLogging(BaseTestKustoLogging):
 
     def teardown_class(cls):
         logging.getLogger().removeHandler(cls.kh)
-        #super().teardown_class()
+        super().teardown_class()
 
     def test_info_logging(self, caplog):
         caplog.set_level(logging.CRITICAL, logger="adal-python")
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         logging_threads = []
         expected_results = 0
-        for i in range(200):
+        for i in range(10):
             nb_of_logging = i*1000
             x = threading.Thread(target=do_logging, args=(nb_of_logging,))
             x.start()

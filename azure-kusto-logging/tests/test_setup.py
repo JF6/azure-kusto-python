@@ -1,3 +1,5 @@
+"""Base class for logging tests
+"""
 import os
 import sys
 import logging
@@ -14,13 +16,19 @@ from azure.kusto.logging import (
 
 
 class BaseTestKustoLogging:
+    """Base class for logging tests.
+    """
     @classmethod
     def setup_class(cls):
         """create the Kusto table and initialize kcsb info"""
+
+        global has_one_test_failed
+
+        has_one_test_failed = False
+
         cls.is_live_testing_ready = False
 
         try:
-            # os.environ['for skipped tests']
             engine_cs = os.environ.get("ENGINE_CONNECTION_STRING")
             app_id = os.environ.get("APP_ID")
             app_key = os.environ.get("APP_KEY")
@@ -71,9 +79,11 @@ class BaseTestKustoLogging:
 
     @classmethod
     def teardown_class(cls):
-        # cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
-        pass
+        global has_one_test_failed
 
+        if not has_one_test_failed:
+            cls.client.execute(cls.test_db, ".drop table {} ifexists".format(cls.test_table))
+        
     @classmethod
     # assertions
     def assert_rows_added(cls, expected: int, level: int, timeout=60):
@@ -91,9 +101,8 @@ class BaseTestKustoLogging:
 
             if response is not None:
                 row = response.primary_results[0][0]
-                actual = int(row["Count"]) - current_count
+                actual = int(row["Count"])
                 # this is done to allow for data to arrive properly
                 if actual >= expected:
                     break
-        current_count += actual
         assert actual == expected, "Row count expected = {0}, while actual row count = {1}".format(expected, actual)
