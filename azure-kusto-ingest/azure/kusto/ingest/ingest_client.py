@@ -21,9 +21,9 @@ from .exceptions import KustoInvalidEndpointError
 from .ingestion_properties import DataFormat, IngestionProperties
 
 
-class KustoIngestClient:
+class QueuedIngestClient:
     """
-    Kusto ingest client provides methods to allow queued ingestion into kusto (ADX).
+    Queued ingest client provides methods to allow queued ingestion into kusto (ADX).
     To learn more about the different types of ingestions and when to use each, visit:
     https://docs.microsoft.com/en-us/azure/data-explorer/ingest-data-overview#ingestion-methods
     """
@@ -56,7 +56,7 @@ class KustoIngestClient:
         if not isinstance(df, DataFrame):
             raise ValueError("Expected DataFrame instance, found {}".format(type(df)))
 
-        file_name = "zdf_{id}_{timestamp}_{tid}.csv.gz".format(id=id(df), timestamp=int(time.time()), tid=threading.get_ident())
+        file_name = "df_{id}_{timestamp}_{uid}.csv.gz".format(id=id(df), timestamp=int(time.time()), uid=uuid.uuid4())
         temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
         df.to_csv(temp_file_path, index=False, encoding="utf-8", header=False, compression="gzip")
 

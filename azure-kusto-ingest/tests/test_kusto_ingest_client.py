@@ -7,7 +7,7 @@ import unittest
 
 import pytest
 import responses
-from azure.kusto.ingest import KustoIngestClient, IngestionProperties, DataFormat
+from azure.kusto.ingest import QueuedIngestClient, IngestionProperties, DataFormat
 from azure.kusto.ingest.exceptions import KustoInvalidEndpointError
 from mock import patch
 
@@ -138,7 +138,7 @@ def request_error_callback(request):
     return response_status, response_headers, json.dumps(response_body)
 
 
-class KustoIngestClientTests(unittest.TestCase):
+class QueuedIngestClientTests(unittest.TestCase):
     MOCKED_UUID_4 = "1111-111111-111111-1111"
     MOCKED_PID = 64
     MOCKED_TIME = 100
@@ -153,7 +153,7 @@ class KustoIngestClientTests(unittest.TestCase):
             responses.POST, "https://ingest-somecluster.kusto.windows.net/v1/rest/mgmt", callback=request_callback, content_type="application/json"
         )
 
-        ingest_client = KustoIngestClient("https://ingest-somecluster.kusto.windows.net")
+        ingest_client = QueuedIngestClient("https://ingest-somecluster.kusto.windows.net")
         ingestion_properties = IngestionProperties(database="database", table="table", data_format=DataFormat.CSV)
 
         # ensure test can work when executed from within directories
@@ -197,7 +197,7 @@ class KustoIngestClientTests(unittest.TestCase):
             responses.POST, "https://somecluster.kusto.windows.net/v1/rest/mgmt", callback=request_error_callback, content_type="application/json"
         )
 
-        ingest_client = KustoIngestClient("https://somecluster.kusto.windows.net")
+        ingest_client = QueuedIngestClient("https://somecluster.kusto.windows.net")
         ingestion_properties = IngestionProperties(database="database", table="table", data_format=DataFormat.CSV)
 
         current_dir = os.getcwd()
@@ -229,7 +229,7 @@ class KustoIngestClientTests(unittest.TestCase):
             responses.POST, "https://ingest-somecluster.kusto.windows.net/v1/rest/mgmt", callback=request_callback, content_type="application/json"
         )
 
-        ingest_client = KustoIngestClient("https://ingest-somecluster.kusto.windows.net")
+        ingest_client = QueuedIngestClient("https://ingest-somecluster.kusto.windows.net")
         ingestion_properties = IngestionProperties(database="database", table="table", data_format=DataFormat.CSV)
 
         from pandas import DataFrame
@@ -246,7 +246,9 @@ class KustoIngestClientTests(unittest.TestCase):
         put_message_in_queue_mock_kwargs = mock_put_message_in_queue.call_args_list[0][1]
 
         queued_message_json = json.loads(put_message_in_queue_mock_kwargs["content"])
-        expected_url = "https://storageaccount.blob.core.windows.net/tempstorage/database__table__1111-111111-111111-1111__df_{0}_100_64.csv.gz?".format(id(df))
+        expected_url = "https://storageaccount.blob.core.windows.net/tempstorage/database__table__1111-111111-111111-1111__df_{0}_100_1111-111111-111111-1111.csv.gz?".format(
+            id(df)
+        )
         # mock_upload_blob_from_stream
         # not checking the query string because it can change order, just checking it's there
         assert queued_message_json["BlobPath"].startswith(expected_url) is True
