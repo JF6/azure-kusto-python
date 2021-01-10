@@ -6,7 +6,7 @@ import unittest
 from uuid import uuid4
 
 import mock
-from azure.kusto.ingest import QueuedIngestClient
+from azure.kusto.ingest import KustoIngestClient
 from azure.kusto.ingest._resource_manager import _ResourceUri
 from azure.kusto.ingest.status import KustoIngestStatusQueues, SuccessMessage, FailureMessage
 from azure.storage.queue import QueueMessage, QueueClient

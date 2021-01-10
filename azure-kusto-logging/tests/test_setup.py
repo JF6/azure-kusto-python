@@ -79,6 +79,8 @@ class BaseTestKustoLogging:
 
     @classmethod
     def teardown_class(cls):
+        #logging.getLogger().removeHandler(cls.kh)
+
         global has_one_test_failed
 
         if not has_one_test_failed:
@@ -95,7 +97,7 @@ class BaseTestKustoLogging:
             timeout -= 1
 
             try:
-                response = cls.client.execute(cls.test_db, "{} | where levelno=={} | where msg != 'Flush' | count".format(cls.test_table, level))
+                response = cls.client.execute(cls.test_db, "{} | where levelno=={} | where msg has 'Test' | where msg != 'Flush' | count".format(cls.test_table, level, __file__))
             except KustoServiceError:
                 continue
 

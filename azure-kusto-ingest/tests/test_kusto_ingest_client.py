@@ -7,7 +7,7 @@ import unittest
 
 import pytest
 import responses
-from azure.kusto.ingest import QueuedIngestClient, IngestionProperties, DataFormat
+from azure.kusto.ingest import KustoIngestClient, IngestionProperties, DataFormat
 from azure.kusto.ingest.exceptions import KustoInvalidEndpointError
 from mock import patch
 

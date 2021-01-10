@@ -3,15 +3,21 @@ Kusto Logging Handler
 """
 import logging
 import pandas
+import copy
+import datetime
+import time
 
 from azure.kusto.ingest import DataFormat
 
+#.ingest  inline  into table  logs2 <| created = 1609876000.7634413
+# .ingest inline into table logs2 <|
+# , , , , , , , , , , , , , 1609876000.7634413,
+
+
 
 class KustoHandler(logging.handlers.MemoryHandler):
+    """A handler class which writes un-formatted logging records to Kusto.
     """
-    A handler class which writes un-formatted logging records to Kusto.
-    """
-
     def __init__(
         self,
         kcsb,
@@ -22,8 +28,16 @@ class KustoHandler(logging.handlers.MemoryHandler):
         capacity=8192,
         flushLevel=logging.ERROR,
     ):
-        """
-        Initialize the appropriate kusto clienrt.
+        """Constructor
+
+        Args:
+            kcsb (KustoConnectionStringBuilder): kusto connection string 
+            database (string): database name
+            table (string): table name
+            data_format (Dataformat, optional): Format for ingestion. Defaults to DataFormat.CSV.
+            useStreaming (bool, optional): Use kusto streaming endpoint. Defaults to False.
+            capacity (int, optional): Number of records before flushing. Defaults to 8192.
+            flushLevel (int, optional): Miminal level to trigger the flush, even if the buffer is not full. Defaults to logging.ERROR.
         """
         super().__init__(capacity, flushLevel=flushLevel)
         from azure.kusto.ingest import (
@@ -32,13 +46,8 @@ class KustoHandler(logging.handlers.MemoryHandler):
             KustoStreamingIngestClient,
         )
 
+        # in order to avoid recursive calls if level is DEBUG
         logging.getLogger("azure").propagate = False
-        # logging.getLogger("oauthlib").propagate = False
-        # logging.getLogger("msrest").propagate = False
-        # logging.getLogger("msal").propagate = False
-        # logging.getLogger("msal_extensions").propagate = False
-        # logging.getLogger("asyncio").propagate = False
-        # logging.getLogger("concurrent").propagate = False
         logging.getLogger("adal-python").propagate = False
         logging.getLogger("requests").propagate = False
         logging.getLogger("urllib3").propagate = False
@@ -49,23 +58,23 @@ class KustoHandler(logging.handlers.MemoryHandler):
             self.client = KustoIngestClient(kcsb)
 
         self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
-        # self.rows = []
         self.first_record = None
+
+        # x = logging.LogRecord(None, 1, None, 1, None, None, None)
+        # self.ref_dict_keys = x.__dict__.keys()
 
     def emit(self, record):
         """
         Emit a record.
         Simply add the record in the records list
         """
-        # print(record)
-        # if len(record.__dict__.keys()) > len(self.field):
-        #     self.fields = list(record.__dict__.keys())
 
         if not self.buffer:
             self.first_record = record  # in case of error in flush, dump the first record.
+
+        # convert to iso datetime as Kusto truncate the milliseconds if a float is provided.
+        # record.created = datetime.datetime.utcfromtimestamp(record.created).isoformat()
         super().emit(record)
-        # self.buffer.append(record.__dict__)
-        # if self.shouldFlush(record.__dict)
 
     def flush(self):
         """
@@ -74,6 +83,7 @@ class KustoHandler(logging.handlers.MemoryHandler):
         if self.buffer:
             self.acquire()
             log_dict = [x.__dict__ for x in self.buffer]
+            
             records_to_write = pandas.DataFrame.from_dict(log_dict, orient="columns")
 
             try:

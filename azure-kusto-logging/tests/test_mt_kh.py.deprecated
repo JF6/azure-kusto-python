@@ -20,7 +20,7 @@ from test_setup import BaseTestKustoLogging
 def do_logging(numberOfMessages):
     nb_of_tests = numberOfMessages
     for i in range(nb_of_tests):
-        logging.info("Test {} info {} from thread {}".format(__file__, i, threading.get_native_id()))
+        logging.info("Test {} info {} from thread {}".format(__file__, i, threading.get_ident()))
 
 
 class TestKustoHandlerMultiThreadLogging(BaseTestKustoLogging):

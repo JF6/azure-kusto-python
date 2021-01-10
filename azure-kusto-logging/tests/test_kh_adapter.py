@@ -1,3 +1,5 @@
+"""Test log adapter use
+"""
 import os
 import sys
 import logging
@@ -25,12 +27,12 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         cls.kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True)
         cls.kh.setLevel(logging.DEBUG)
         logger = logging.getLogger()
-        # cls.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        # cls.kh.setFormatter(cls.formatter)
-        logging.getLogger().addHandler(cls.kh)
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.addHandler(cls.kh)
+        cls.adapter = logging.LoggerAdapter(logger, {'connid': "::1"})
+        cls.adapter.setLevel(logging.DEBUG)
 
     def teardown_class(cls):
+        pass
         logging.getLogger().removeHandler(cls.kh)
         #super().teardown_class()
 
@@ -39,7 +41,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 3
         for i in range(0, nb_of_tests):
-            logging.info("Test {} info {}".format(__file__, i))
+            self.adapter.info("Test {} info {}".format(__file__, i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.INFO)
 
@@ -48,7 +50,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 4
         for i in range(0, nb_of_tests):
-            logging.debug("Test debug {}".format(i))
+            self.adapter.debug("Test debug {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.DEBUG)
 
@@ -57,7 +59,7 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 2
         for i in range(0, nb_of_tests):
-            logging.error("Test error {}".format(i))
+            self.adapter.error("Test error {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.ERROR)
 
@@ -66,6 +68,6 @@ class TestKustoHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         nb_of_tests = 1
         for i in range(0, nb_of_tests):
-            logging.critical("Test critical {}".format(i))
+            self.adapter.critical("Test critical {}".format(i))
         self.kh.flush()
         self.assert_rows_added(nb_of_tests, logging.CRITICAL)

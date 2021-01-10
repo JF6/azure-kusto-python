@@ -20,5 +20,6 @@
     processName:string,
     process:long,
     message:string,
-    asctime:datetime
+    asctime:datetime,
+    extra:dynamic
 )

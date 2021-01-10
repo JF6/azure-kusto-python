@@ -1,8 +1,12 @@
-Microsoft Azure Kusto Library for Python
+Microsoft Azure Kusto Logging for Python
 ========================================
 
 Overview
 --------
+
+Azure kusto logging is a handler which bufferize traces then write them in Kusto. 
+
+Logging is done through the standard python mechanism with the exception of formatters, which makes little sense in a context where the traces will be queried on the attribute values.
 
 .. code-block:: python
 
@@ -16,13 +20,37 @@ Overview
     kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(cluster, client_id, client_secret, authority_id)
     client = KustoClient(kcsb)
 
-    db = "Samples"
-    query = "StormEvents | take 10"
 
-    response = client.execute(db, query)
-    for row in response.primary_results[0]:
-        print(row[0], " ", row["EventType"])
 
+Patterns
+--------
+
+The most appropriate use is to leverage the queue handler / queue listener
+
+.. code-block:: python
+
+    kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True, capacity=50000, flushLevel=logging.CRITICAL)
+    kh.setLevel(logging.INFO)
+
+    q = Queue()
+    qh = QueueHandler(q)
+
+    ql = QueueListener(q, kh)
+    ql.start()
+
+    logger = logging.getLogger()
+    logger.addHandler(qh)
+    logger.setLevel(logging.INFO)
+
+
+The handler can be used with_aad_application_key_authentication
+
+.. code-block:: python
+
+    kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
+    kh.setLevel(logging.INFO)
+    logging.getLogger().addHandler(kh)
+    logging.getLogger().setLevel(logging.INFO)
 
 
 *Kusto Python Client* Library provides the capability to query Kusto clusters using Python.
