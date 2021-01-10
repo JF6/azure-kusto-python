@@ -6,7 +6,9 @@ Overview
 
 Azure kusto logging is a handler which bufferize traces then write them in Kusto. 
 
-Logging is done through the standard python mechanism with the exception of formatters, which makes little sense in a context where the traces will be queried on the attribute values.
+Logging is done through the standard python `logging module <https://docs.python.org/3/library/logging.html>`_. with the exception of formatters, which makes little sense in a context where the traces will be queried on the attribute values.
+
+Initialization is done the usual way, with a connection string KustoConnectionStringBuilder
 
 .. code-block:: python
 
@@ -25,7 +27,26 @@ Logging is done through the standard python mechanism with the exception of form
 Patterns
 --------
 
-The most appropriate use is to leverage the queue handler / queue listener
+
+The handler can be used by itself, it behaves the same as a `memory handler <https://docs.python.org/3/library/logging.handlers.html?highlight=memoryhandler#logging.handlers.MemoryHandler>`_.
+
+The useStreaming flag is set if the Kusto streaming interface is used (the kcsb should be consistent)
+capacity is the max number of records kept in memory 
+flushLevel is the minimal level where the buffer will be flushed forcibly, even if not full.
+
+
+.. code-block:: python
+
+    kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True, capacity=50000, flushLevel=logging.CRITICAL)
+    kh.setLevel(logging.INFO)
+    logging.getLogger().addHandler(kh)
+    logging.getLogger().setLevel(logging.INFO)
+
+
+The most appropriate use is to leverage the queue handler / queue listener. As the Kusto ingestion mechanism in not thread-safe, the queue listene will ensure that only a single thread will be used.
+
+queues will also ensure that the performance of the caller is not blocked waiting when the buffer is written over th network.
+
 
 .. code-block:: python
 
@@ -43,14 +64,6 @@ The most appropriate use is to leverage the queue handler / queue listener
     logger.setLevel(logging.INFO)
 
 
-The handler can be used with_aad_application_key_authentication
-
-.. code-block:: python
-
-    kh = KustoHandler(kcsb=kcsb, database=test_db, table=test_table, useStreaming=True)
-    kh.setLevel(logging.INFO)
-    logging.getLogger().addHandler(kh)
-    logging.getLogger().setLevel(logging.INFO)
 
 
 *Kusto Python Client* Library provides the capability to query Kusto clusters using Python.
