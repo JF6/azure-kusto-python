@@ -6,6 +6,7 @@ import pandas
 import copy
 import datetime
 import time
+import sys
 
 from azure.kusto.ingest import DataFormat
 
@@ -27,6 +28,7 @@ class KustoHandler(logging.handlers.MemoryHandler):
         useStreaming=False,
         capacity=8192,
         flushLevel=logging.ERROR,
+        retries = [5, 30, 60]
     ):
         """Constructor
 
@@ -38,6 +40,7 @@ class KustoHandler(logging.handlers.MemoryHandler):
             useStreaming (bool, optional): Use kusto streaming endpoint. Defaults to False.
             capacity (int, optional): Number of records before flushing. Defaults to 8192.
             flushLevel (int, optional): Miminal level to trigger the flush, even if the buffer is not full. Defaults to logging.ERROR.
+            retries (list, optional): retries for ingestion error. Defaults to [5s, 30s, 60s]
         """
         super().__init__(capacity, flushLevel=flushLevel)
         from azure.kusto.ingest import (
@@ -60,6 +63,8 @@ class KustoHandler(logging.handlers.MemoryHandler):
         self.ingestion_properties = IngestionProperties(database, table, data_format=data_format)
         self.first_record = None
 
+        self.retries = retries
+
         # x = logging.LogRecord(None, 1, None, 1, None, None, None)
         # self.ref_dict_keys = x.__dict__.keys()
 
@@ -72,8 +77,6 @@ class KustoHandler(logging.handlers.MemoryHandler):
         if not self.buffer:
             self.first_record = record  # in case of error in flush, dump the first record.
 
-        # convert to iso datetime as Kusto truncate the milliseconds if a float is provided.
-        # record.created = datetime.datetime.utcfromtimestamp(record.created).isoformat()
         super().emit(record)
 
     def flush(self):
@@ -82,15 +85,26 @@ class KustoHandler(logging.handlers.MemoryHandler):
         """
         if self.buffer:
             self.acquire()
-            log_dict = [x.__dict__ for x in self.buffer]
+            log_dict = [x.__dict__ for x in self.buffer].copy()
+            # convert to iso datetime as Kusto truncate the milliseconds if a float is provided.
+            for iter in log_dict:
+                iter['created'] = datetime.datetime.utcfromtimestamp(iter.get('created', 0)).isoformat()
             
             records_to_write = pandas.DataFrame.from_dict(log_dict, orient="columns")
 
-            try:
-                self.client.ingest_from_dataframe(records_to_write, self.ingestion_properties)
-            except Exception:
+            retries = self.retries.copy()
+            while retries:
+                try:
+                    self.client.ingest_from_dataframe(records_to_write, self.ingestion_properties)
+                except Exception:
+                    waiting_time = retries.pop(0)
+                    print("Exception, retrying in {} seconds".format(waiting_time), file=sys.stderr)
+                    time.sleep(waiting_time)
+                else:
+                    break
+            else:
                 logging.Handler.handleError(self, self.first_record)
-            finally:
-                self.first_record = None
-                self.buffer.clear()
-                self.release()
+            self.first_record = None
+            self.buffer.clear()
+            self.release()
+
