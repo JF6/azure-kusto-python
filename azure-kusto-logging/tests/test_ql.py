@@ -14,8 +14,7 @@ from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.ingest import KustoStreamingIngestClient, IngestionProperties, DataFormat
 from azure.kusto.logging import (
-    KustoHandler,
-    FlushableMemoryHandler,
+    KustoHandler
 )
 
 
@@ -97,7 +96,7 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
         caplog.set_level(logging.CRITICAL, logger="urllib3.connectionpool")
         logging_threads = []
         expected_results = 0
-        for i in range(100):
+        for i in range(16):
             nb_of_logging = i * 1000
             x = threading.Thread(target=do_logging, args=(nb_of_logging,))
             x.start()

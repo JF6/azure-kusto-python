@@ -33,6 +33,7 @@ The handler can be used by itself, it behaves the same as a `memory handler <htt
 The useStreaming flag is set if the Kusto streaming interface is used (the kcsb should be consistent)
 capacity is the max number of records kept in memory 
 flushLevel is the minimal level where the buffer will be flushed forcibly, even if not full.
+retries is an array containing the waiting times between retries (default: 5s then 30s then 60s)
 
 
 .. code-block:: python
