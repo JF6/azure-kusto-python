@@ -28,14 +28,13 @@ class BaseTestKustoLogging:
 
         cls.is_live_testing_ready = True
 
-
         engine_cs = os.environ.get("ENGINE_CONNECTION_STRING")
         app_id = os.environ.get("APP_ID")
         app_key = os.environ.get("APP_KEY")
         auth_id = os.environ.get("AUTH_ID")
 
         if engine_cs and app_id and app_key and auth_id:
-        
+
             cls.kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(engine_cs, app_id, app_key, auth_id)
 
             cls.test_db = os.environ.get("TEST_DATABASE")

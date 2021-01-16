@@ -28,7 +28,9 @@ class TestKustoQueueListenerMemoryHandlerLogging(BaseTestKustoLogging):
             pytest.skip("No backend end available", allow_module_level=True)
 
         queue_cap = 5000
-        cls.kh = KustoHandler(kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True, capacity=queue_cap, flushLevel=logging.CRITICAL, retries=[])
+        cls.kh = KustoHandler(
+            kcsb=cls.kcsb, database=cls.test_db, table=cls.test_table, useStreaming=True, capacity=queue_cap, flushLevel=logging.CRITICAL, retries=[]
+        )
         cls.kh.setLevel(logging.DEBUG)
 
         cls.q = Queue()
