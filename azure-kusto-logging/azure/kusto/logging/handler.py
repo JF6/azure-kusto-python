@@ -10,6 +10,7 @@ import pandas
 
 from azure.kusto.ingest import DataFormat
 from azure.kusto.data.exceptions import KustoError
+from azure.core.exceptions import AzureError
 
 # .ingest  inline  into table  logs2 <| created = 1609876000.7634413
 # .ingest inline into table logs2 <|
@@ -86,7 +87,7 @@ class KustoHandler(logging.handlers.MemoryHandler):
             while retries:
                 try:
                     self.client.ingest_from_dataframe(records_to_write, self.ingestion_properties)
-                except KustoError:
+                except (KustoError, AzureError): # azure.core.exceptions.ServiceRequestError
                     waiting_time = retries.pop(0)
                     if retries:
                         print("Exception, retrying in {} seconds".format(waiting_time), file=sys.stderr)
